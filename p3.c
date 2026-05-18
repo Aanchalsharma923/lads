@@ -1,156 +1,285 @@
 #include <stdio.h>
 #include <stdlib.h>
+
 #define RED 0
 #define BLACK 1
 
-struct Node
-{
-    int data, color;
+/* Node structure */
+struct Node {
+    int data;
+    int color;
     struct Node *left, *right, *parent;
 };
+
 struct Node *root = NULL;
 
-struct Node *newNode(int data){
-    struct Node *p = (struct Node *)malloc(sizeof(struct Node));
+/* Create new red node */
+struct Node* newNode(int data) {
+    struct Node *p = (struct Node*)malloc(sizeof(struct Node));
     p->data = data;
     p->color = RED;
-    p->left = p->right = NULL;
-    p->parent = NULL;
-    return (p);
+    p->left = p->right = p->parent = NULL;
+    return p;
 }
 
-void leftRotation(struct Node *y){
-    struct Node *z = y->parent, *x = y->right, *t = y->right->left;
-    y->right = t;
-    x->left = y;
-    x->parent = z;
-    y->parent = x;
+/* Left rotation */
+void leftRotate(struct Node *x) {
+    struct Node *y = x->right;
+    x->right = y->left;
 
-    if (t != NULL){
-        t->parent = y;
-    }
-    if (z == NULL){
+    if (y->left != NULL)
+        y->left->parent = x;
+
+    y->parent = x->parent;
+
+    if (x->parent == NULL)
+        root = y;
+    else if (x == x->parent->left)
+        x->parent->left = y;
+    else
+        x->parent->right = y;
+
+    y->left = x;
+    x->parent = y;
+}
+
+/* Right rotation */
+void rightRotate(struct Node *y) {
+    struct Node *x = y->left;
+    y->left = x->right;
+
+    if (x->right != NULL)
+        x->right->parent = y;
+
+    x->parent = y->parent;
+
+    if (y->parent == NULL)
         root = x;
-    }else if (z->right == y){
-        z->right = x;
-    }else{
-        z->left = x;
-    }
-}
+    else if (y == y->parent->left)
+        y->parent->left = x;
+    else
+        y->parent->right = x;
 
-void rightRotation(struct Node *y){
-    struct Node *z = y->parent, *x = y->left, *t = y->left->right;
-
-    y->left = t;
     x->right = y;
-
-    x->parent = z;
     y->parent = x;
-    if (t != NULL){
-        t->parent = y;
-    }
-
-    if (z == NULL){
-        root = x;
-    }else if (z->right == y){
-        z->right = x;
-    }else{
-        z->left = x;
-    }
 }
 
-void fixInsert(struct Node *z){
-    while (z != root && z->parent->color == RED){
+/* Fix Red-Black Tree after insertion */
+void fixInsert(struct Node *z) {
+    while (z != root && z->parent->color == RED) {
+        struct Node *p = z->parent;
+        struct Node *gp = p->parent;
 
-        struct Node *P = z->parent;
-        struct Node *GP = z->parent->parent;
-        struct Node *U = NULL;
+        if (p == gp->left) {
+            struct Node *u = gp->right;  // uncle
 
-        if (GP == NULL){
-            break;
-        }
-        if (P == GP->right){
-            U = GP->left;
-        }else{
-            U = GP->right;
-        }
-        // check uncle
-        if (U != NULL && U->color == RED){
-            P->color = BLACK;
-            U->color = BLACK;
-            GP->color = RED;
-        }else{
-            
-            if (z == P->left && P == GP->right){ // logic for LR Roatation
-                z->color = BLACK;
-                GP->color = RED;
-                rightRotation(P);
-                
-                leftRotation(GP);
-            }else if (z == P->right && P == GP->right){ // logic for LL Rotation
-                P->color = BLACK;
-                GP->color = RED;
-                leftRotation(GP);
-            }else if (z == P->left && P == GP->left){ // logic for RR rotation
-                P->color = BLACK;
-                GP->color = RED;
-                rightRotation(GP);
-            }else{ // logic for RL Rotation
-                z->color = BLACK;
-                GP->color = RED;
-                leftRotation(P);
-                rightRotation(GP);
+            if (u != NULL && u->color == RED) {
+                p->color = BLACK;
+                u->color = BLACK;
+                gp->color = RED;
+                z = gp;
+            } else {
+                if (z == p->right) {
+                    z = p;
+                    leftRotate(z);
+                }
+                p->color = BLACK;
+                gp->color = RED;
+                rightRotate(gp);
+            }
+        } else {
+            struct Node *u = gp->left;
+
+            if (u != NULL && u->color == RED) {
+                p->color = BLACK;
+                u->color = BLACK;
+                gp->color = RED;
+                z = gp;
+            } else {
+                if (z == p->left) {
+                    z = p;
+                    rightRotate(z);
+                }
+                p->color = BLACK;
+                gp->color = RED;
+                leftRotate(gp);
             }
         }
-        z = GP;
     }
     root->color = BLACK;
 }
-void insert(int data){
 
+/* Insert operation */
+void insert(int data) {
     struct Node *z = newNode(data);
     struct Node *y = NULL;
     struct Node *x = root;
 
-    if (x == NULL){
-        root = z;
-        z->parent = NULL;
-    }else{
-        while (x != NULL)
-        {
-            y = x;
-            if (data < x->data)
-                x = x->left;
-            else
-                x = x->right;
-        }
-        if (y->data > data)
-        {
-            y->left = z;
-        }
+    while (x != NULL) {
+        y = x;
+        if (data < x->data)
+            x = x->left;
         else
-        {
-            y->right = z;
-        }
-        z->parent = y;
+            x = x->right;
     }
+
+    z->parent = y;
+
+    if (y == NULL)
+        root = z;
+    else if (data < y->data)
+        y->left = z;
+    else
+        y->right = z;
+
     fixInsert(z);
 }
-void inorder(struct Node *q){
-    if (q != NULL){
-        inorder(q->left);
-        printf("%d (%d)", q->data, q->color);
-        inorder(q->right);
+
+/* Find minimum */
+struct Node* minimum(struct Node *x) {
+    while (x->left != NULL)
+        x = x->left;
+    return x;
+}
+
+/* Fix after deletion */
+void fixDelete(struct Node *x) {
+    while (x != root && x->color == BLACK) {
+        struct Node *s;
+
+        if (x == x->parent->left) {
+            s = x->parent->right;
+
+            if (s->color == RED) {
+                s->color = BLACK;
+                x->parent->color = RED;
+                leftRotate(x->parent);
+                s = x->parent->right;
+            }
+
+            if ((s->left == NULL || s->left->color == BLACK) &&
+                (s->right == NULL || s->right->color == BLACK)) {
+                s->color = RED;
+                x = x->parent;
+            } else {
+                if (s->right == NULL || s->right->color == BLACK) {
+                    s->left->color = BLACK;
+                    s->color = RED;
+                    rightRotate(s);
+                    s = x->parent->right;
+                }
+                s->color = x->parent->color;
+                x->parent->color = BLACK;
+                if (s->right)
+                    s->right->color = BLACK;
+                leftRotate(x->parent);
+                x = root;
+            }
+        } else {
+            s = x->parent->left;
+
+            if (s->color == RED) {
+                s->color = BLACK;
+                x->parent->color = RED;
+                rightRotate(x->parent);
+                s = x->parent->left;
+            }
+
+            if ((s->left == NULL || s->left->color == BLACK) &&
+                (s->right == NULL || s->right->color == BLACK)) {
+                s->color = RED;
+                x = x->parent;
+            } else {
+                if (s->left == NULL || s->left->color == BLACK) {
+                    s->right->color = BLACK;
+                    s->color = RED;
+                    leftRotate(s);
+                    s = x->parent->left;
+                }
+                s->color = x->parent->color;
+                x->parent->color = BLACK;
+                if (s->left)
+                    s->left->color = BLACK;
+                rightRotate(x->parent);
+                x = root;
+            }
+        }
+    }
+    x->color = BLACK;
+}
+
+/* Delete node */
+void deleteNode(int data) {
+    struct Node *z = root, *x, *y;
+
+    while (z != NULL && z->data != data) {
+        if (data < z->data)
+            z = z->left;
+        else
+            z = z->right;
+    }
+
+    if (z == NULL) return;
+
+    y = z;
+    int yOriginalColor = y->color;
+
+    if (z->left == NULL) {
+        x = z->right;
+        if (z->parent == NULL)
+            root = x;
+        else if (z == z->parent->left)
+            z->parent->left = x;
+        else
+            z->parent->right = x;
+        if (x) x->parent = z->parent;
+    }
+    else if (z->right == NULL) {
+        x = z->left;
+        if (z->parent == NULL)
+            root = x;
+        else if (z == z->parent->left)
+            z->parent->left = x;
+        else
+            z->parent->right = x;
+        if (x) x->parent = z->parent;
+    }
+    else {
+        y = minimum(z->right);
+        yOriginalColor = y->color;
+        x = y->right;
+        z->data = y->data;
+    }
+
+    if (yOriginalColor == BLACK && x != NULL)
+        fixDelete(x);
+
+    free(y);
+}
+
+/* Inorder traversal */
+void inorder(struct Node *r) {
+    if (r != NULL) {
+        inorder(r->left);
+        printf("%d(%s) ", r->data, r->color == RED ? "R" : "B");
+        inorder(r->right);
     }
 }
-int main(){
+
+/* Driver */
+int main() {
     insert(10);
     insert(20);
     insert(30);
     insert(40);
     insert(50);
-    insert(60);
-    insert(70);
-    insert(80);
+
+    printf("Inorder after insert:\n");
     inorder(root);
+
+    deleteNode(30);
+    printf("\n\nAfter deleting 30:\n");
+    inorder(root);
+
+    return 0;
 }

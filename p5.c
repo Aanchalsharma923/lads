@@ -1,91 +1,186 @@
 #include <stdio.h>
 #include <stdlib.h>
+
 #define SIZE 10
 
 int heap[SIZE];
-int i = -1;
+int last = -1;
 
-void heapify(int k) {
-    while (k > 0) {
-        int parent = (k - 1) / 2;
+/* Heapify Up */
+void heapifyUp(int index) {
 
-        if (heap[k] < heap[parent]) {
-            int t = heap[k];
-            heap[k] = heap[parent];
-            heap[parent] = t;
-            k = parent;
-        } else {
+    while (index > 0) {
+
+        int parent = (index - 1) / 2;
+
+        if (heap[index] < heap[parent]) {
+
+            int temp = heap[index];
+            heap[index] = heap[parent];
+            heap[parent] = temp;
+
+            index = parent;
+        }
+
+        else {
             break;
         }
     }
 }
 
-void comparedown(int k) {
-    while (1) {
-        int left = 2 * k + 1;
-        int right = 2 * k + 2;
-        int smallest = k;
+/* Heapify Down */
+void heapifyDown(int index) {
 
-        if (left <= i && heap[left] < heap[smallest])
+    while (1) {
+
+        int left = 2 * index + 1;
+        int right = 2 * index + 2;
+
+        int smallest = index;
+
+        if (left <= last &&
+            heap[left] < heap[smallest])
             smallest = left;
 
-        if (right <= i && heap[right] < heap[smallest])
+        if (right <= last &&
+            heap[right] < heap[smallest])
             smallest = right;
 
-        if (smallest != k) {
-            int t = heap[k];
-            heap[k] = heap[smallest];
-            heap[smallest] = t;
-            k = smallest;
-        } else {
+        if (smallest != index) {
+
+            int temp = heap[index];
+            heap[index] = heap[smallest];
+            heap[smallest] = temp;
+
+            index = smallest;
+        }
+
+        else {
             break;
         }
     }
 }
 
-void delete() {
-    if (i >= 0) {
-        printf("Deleted %d\n", heap[0]);
-        heap[0] = heap[i];
-        i--;
-        comparedown(0);
-    } else {
-        printf("Heap Underflow\n");
-    }
-}
-
+/* Insert Element */
 void insert(int key) {
-    if (i == SIZE - 1) {
-        printf("Overflow\n");
+
+    if (last == SIZE - 1) {
+
+        printf("Heap Overflow\n");
         return;
     }
-    i++;
-    heap[i] = key;
-    heapify(i);
+
+    last++;
+
+    heap[last] = key;
+
+    heapifyUp(last);
+
+    printf("Inserted %d\n", key);
 }
 
-void display() {
-    for (int k = 0; k <= i; k++) {
-        printf(" %d", heap[k]);
+/* Delete Minimum Element */
+void deleteMin() {
+
+    if (last == -1) {
+
+        printf("Heap Underflow\n");
+        return;
     }
+
+    printf("Deleted Element: %d\n", heap[0]);
+
+    heap[0] = heap[last];
+
+    last--;
+
+    heapifyDown(0);
+}
+
+/* Peek Minimum Element */
+void peek() {
+
+    if (last == -1) {
+
+        printf("Heap is Empty\n");
+        return;
+    }
+
+    printf("Top Priority Element: %d\n",
+            heap[0]);
+}
+
+/* Display Heap */
+void display() {
+
+    if (last == -1) {
+
+        printf("Heap is Empty\n");
+        return;
+    }
+
+    printf("Heap Elements:\n");
+
+    for (int i = 0; i <= last; i++)
+        printf("%d ", heap[i]);
+
     printf("\n");
 }
 
+/* Main Function */
 int main() {
-    insert(10);
-    insert(20);
-    insert(30);
-    insert(3);
-    insert(4);
-    insert(7);
 
-    printf("Heap Data:\n");
-    display();
+    int choice, value;
 
-    delete();
+    while (1) {
 
-    printf("Heap Data After delete:\n");
-    display();
+        printf("\n1. Insert");
+        printf("\n2. Delete Min");
+        printf("\n3. Peek");
+        printf("\n4. Display");
+        printf("\n5. Exit");
+
+        printf("\nEnter choice: ");
+        scanf("%d", &choice);
+
+        switch (choice) {
+
+            case 1:
+
+                printf("Enter value: ");
+                scanf("%d", &value);
+
+                insert(value);
+
+                break;
+
+            case 2:
+
+                deleteMin();
+
+                break;
+
+            case 3:
+
+                peek();
+
+                break;
+
+            case 4:
+
+                display();
+
+                break;
+
+            case 5:
+
+                exit(0);
+
+            default:
+
+                printf("Invalid Choice\n");
+        }
+    }
 
     return 0;
 }

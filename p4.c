@@ -13,17 +13,18 @@ struct Node *root = NULL;
 struct Node *newNode(int key) {
     struct Node *p = (struct Node *)malloc(sizeof(struct Node));
     p->k1 = key;
-    p->c = 1;
     p->k2 = 0;
+    p->c = 1;
     p->l = p->m = p->r = NULL;
     return p;
 }
 
-/* Insert key into a leaf with space */
+/* Insert key into node with one key */
 void insertIntoNode(struct Node *p, int key, struct Node *child) {
     if (key < p->k1) {
         p->k2 = p->k1;
         p->k1 = key;
+
         p->r = p->m;
         p->m = child;
     } else {
@@ -35,32 +36,45 @@ void insertIntoNode(struct Node *p, int key, struct Node *child) {
 
 /* Split a node */
 struct Node *split(struct Node *p, int key, struct Node *child, int *upKey) {
-    struct Node *newRight;
-    int a, b, c;
+    int keys[3];
+    struct Node *children[4];
 
-    a = p->k1;
-    b = p->k2;
-    c = key;
+    /* Collect keys */
+    keys[0] = p->k1;
+    keys[1] = p->k2;
+    keys[2] = key;
 
     /* Sort keys */
-    if (a > b) { int t=a; a=b; b=t; }
-    if (a > c) { int t=a; a=c; c=t; }
-    if (b > c) { int t=b; b=c; c=t; }
+    for (int i = 0; i < 3; i++)
+        for (int j = i + 1; j < 3; j++)
+            if (keys[i] > keys[j]) {
+                int t = keys[i];
+                keys[i] = keys[j];
+                keys[j] = t;
+            }
 
-    *upKey = b;
+    *upKey = keys[1];
 
-    /* Left node keeps smallest key */
-    p->k1 = a;
+    /* Collect children */
+    children[0] = p->l;
+    children[1] = p->m;
+    children[2] = p->r;
+    children[3] = child;
+
+    /* Left node */
+    p->k1 = keys[0];
     p->c = 1;
+    p->k2 = 0;
 
     /* Right node */
-    newRight = newNode(c);
+    struct Node *newRight = newNode(keys[2]);
 
-    /* Fix children */
-    if (child != NULL) {
-        newRight->l = p->r;
-        newRight->m = child;
-        p->r = NULL;
+    if (p->l != NULL) {
+        p->l = children[0];
+        p->m = children[1];
+
+        newRight->l = children[2];
+        newRight->m = children[3];
     }
 
     return newRight;
@@ -70,7 +84,7 @@ struct Node *split(struct Node *p, int key, struct Node *child, int *upKey) {
 struct Node *insertRec(struct Node *p, int key, int *upKey, int *splitFlag) {
     struct Node *newChild = NULL;
 
-    /* Leaf */
+    /* Leaf node */
     if (p->l == NULL) {
         if (p->c == 1) {
             insertIntoNode(p, key, NULL);
@@ -122,13 +136,14 @@ void insert(int key) {
     }
 }
 
-/* Correct inorder traversal */
+/* Inorder traversal */
 void inorder(struct Node *p) {
     if (p == NULL) return;
 
     inorder(p->l);
     printf("%d ", p->k1);
     inorder(p->m);
+
     if (p->c == 2) {
         printf("%d ", p->k2);
         inorder(p->r);
@@ -136,12 +151,14 @@ void inorder(struct Node *p) {
 }
 
 int main() {
-    int keys[] = {10, 20, 30, 5, 35, 40, 1};
+    int keys[] = {10, 20, 30, 5, 35, 40};
     int i;
 
-    for (i = 0; i < 7; i++)
+    for (i = 0; i < 6; i++)
         insert(keys[i]);
 
+    printf("Inorder traversal: ");
     inorder(root);
+
     return 0;
 }

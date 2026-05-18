@@ -1,205 +1,241 @@
-#include<stdio.h>
-#include<stdlib.h>
+#include <stdio.h>
+#include <stdlib.h>
+
 #define SPACE 5
-struct Node{
-    struct Node *left;
+
+struct Node {
     int data;
+    int height;
+    struct Node *left;
     struct Node *right;
-    int h;
 };
-struct Node *root=NULL;
-struct Node * STACK[50];
-int top=-1;
-void PUSH(struct Node *q){
-    STACK[++top]=q;
+
+struct Node *root = NULL;
+
+/* Create Node */
+struct Node* createNode(int data) {
+    struct Node *n = (struct Node*)malloc(sizeof(struct Node));
+
+    n->data = data;
+    n->left = n->right = NULL;
+    n->height = 1;
+
+    return n;
 }
-struct Node * POP(){
-    return(STACK[top--]);
+
+/* Height */
+int height(struct Node *n) {
+    if (n == NULL)
+        return 0;
+
+    return n->height;
 }
-struct Node *peep(){
-    return(STACK[top]);
+
+/* Maximum */
+int max(int a, int b) {
+    return (a > b) ? a : b;
 }
-int maximum(struct Node *left, struct Node *right){
-    int a=left!=NULL?left->h:0;
-    int b=right!=NULL?right->h:0;
-    return (a>b?a:b);
+
+/* Balance Factor */
+int balanceFactor(struct Node *n) {
+    if (n == NULL)
+        return 0;
+
+    return height(n->left) - height(n->right);
 }
-int balanceFactor(struct Node *q){
-    int a=q->left!=NULL?q->left->h:0;
-    int b=q->right!=NULL?q->right->h:0;
-    return (a-b);
+
+/* Right Rotation */
+struct Node* rightRotate(struct Node *y) {
+
+    struct Node *x = y->left;
+    struct Node *t = x->right;
+
+    x->right = y;
+    y->left = t;
+
+    y->height = 1 + max(height(y->left), height(y->right));
+    x->height = 1 + max(height(x->left), height(x->right));
+
+    return x;
 }
-struct Node * leftRotation(struct Node *q){
-    struct Node *t=q->right;
-    struct Node *s=t->left;
-    t->left=q;
-    q->right=s;
-    q->h=1+maximum(q->left, q->right);
-    t->h=1+maximum(t->left, t->right);
-    return(t);
+
+/* Left Rotation */
+struct Node* leftRotate(struct Node *x) {
+
+    struct Node *y = x->right;
+    struct Node *t = y->left;
+
+    y->left = x;
+    x->right = t;
+
+    x->height = 1 + max(height(x->left), height(x->right));
+    y->height = 1 + max(height(y->left), height(y->right));
+
+    return y;
 }
-struct Node * rightRotation(struct Node *q){
-    struct Node *t=q->left;
-    struct Node *s=t->right;
-    t->right=q;
-    q->left=s;
-    q->h=1+maximum(q->left, q->right);
-    t->h=1+maximum(t->left, t->right);
-    return(t);
-}
-struct Node *insert(struct Node *N, int data){
-    if(N==NULL){
-        struct Node *p=(struct Node *)malloc(sizeof(struct Node));
-        p->left=p->right=NULL;
-        p->h=1;
-        p->data=data;
-        return p;
+
+/* Insert */
+struct Node* insert(struct Node *node, int data) {
+
+    if (node == NULL)
+        return createNode(data);
+
+    if (data < node->data)
+        node->left = insert(node->left, data);
+
+    else if (data > node->data)
+        node->right = insert(node->right, data);
+
+    else
+        return node;
+
+    node->height = 1 + max(height(node->left),
+                            height(node->right));
+
+    int bf = balanceFactor(node);
+
+    /* LL */
+    if (bf > 1 && data < node->left->data)
+        return rightRotate(node);
+
+    /* RR */
+    if (bf < -1 && data > node->right->data)
+        return leftRotate(node);
+
+    /* LR */
+    if (bf > 1 && data > node->left->data) {
+        node->left = leftRotate(node->left);
+        return rightRotate(node);
     }
-    else{
-        if(N->data>data){
-            N->left=insert(N->left, data);
+
+    /* RL */
+    if (bf < -1 && data < node->right->data) {
+        node->right = rightRotate(node->right);
+        return leftRotate(node);
+    }
+
+    return node;
+}
+
+/* Minimum Node */
+struct Node* minValueNode(struct Node *node) {
+
+    struct Node *current = node;
+
+    while (current->left != NULL)
+        current = current->left;
+
+    return current;
+}
+
+/* Delete */
+struct Node* deleteNode(struct Node *root, int key) {
+
+    if (root == NULL)
+        return root;
+
+    /* BST Delete */
+    if (key < root->data)
+        root->left = deleteNode(root->left, key);
+
+    else if (key > root->data)
+        root->right = deleteNode(root->right, key);
+
+    else {
+
+        /* One child or no child */
+        if (root->left == NULL || root->right == NULL) {
+
+            struct Node *temp;
+
+            if (root->left)
+                temp = root->left;
+            else
+                temp = root->right;
+
+            /* No child */
+            if (temp == NULL) {
+                temp = root;
+                root = NULL;
+            }
+
+            /* One child */
+            else {
+                *root = *temp;
+            }
+
+            free(temp);
         }
-        else{
-            N->right=insert(N->right, data);
-        }
-    }
-    N->h=1+maximum(N->left, N->right);
-    int bf= balanceFactor(N);
-    if(bf<-1 && data>N->right->data){
-        N=leftRotation(N);
-    }
-    if(bf<-1 && data<N->right->data){
-        N->right=rightRotation(N->right);
-        N=leftRotation(N);
-    }
-    if(bf>1 && data<N->left->data){
-        N=rightRotation(N);
-    }
-    if(bf>1 && data>N->left->data){
-        N->left=leftRotation(N->left);
-        N=rightRotation(N);
-    }
-    return N;
-}
-void delete(struct Node *q, int data){
-    struct Node *parent = NULL;
-    while(q!=NULL){
-        if(q->data==data){
-            //two child
-            if(q->left!=NULL && q->right!=NULL){
-                struct Node *t=q->right;
-                PUSH(q);
-                while(t->left!=NULL){
-                    PUSH(t);
-                    parent=t;
-                    t=t->left;
-                }
-                q->data=t->data;
-                q=t;
-            }
-            if(q->left!=NULL && q->right==NULL){//left child only
-                if(parent==NULL){
-                    root=q->left;
-                }
-                else{
-                    if(parent->left==q){
-                        parent->left=q->left;
-                    }
-                    else{
-                        parent->right=q->left;
-                    }
-                }
-            }
-            if(q->left==NULL && q->right!=NULL){//right child only
-                if(parent==NULL){
-                    root=q->right;
-                }
-                else{
-                    if(parent->left==q){
-                        parent->left=q->right;
-                    }
-                    else{
-                        parent->right=q->right;
-                    }
-                }
-            }
-            if(q->left==NULL && q->right==NULL){//No child only
-                if(parent==NULL){
-                    root=NULL;
-                }
-                else{
-                    if(parent->left==q){
-                        parent->left=NULL;
-                    }
-                    else{
-                        parent->right=NULL;
-                    }
-                }
-            }
-            free(q); // delete the node q
-            while(top!=-1){
-                struct Node *p = POP();
-                int bf = balanceFactor(p);
-                int flag=0;
-                p->h = 1+maximum(p->left,p->right);
-                if(bf<-1 && balanceFactor(p->right)<=0){
-                    p=leftRotation(p);
-                    flag=1;
-                }
-                if(bf<-1 && balanceFactor(p->right)>0){
-                    p->right=rightRotation(p->right);
-                    p=leftRotation(p);
-                    flag=1;
-                }
-                if(bf>1 && balanceFactor(p->left)>=0){
-                    p=rightRotation(p);
-                    flag=1;
-                }
-                if(bf>1 && balanceFactor(p->left)<0){
-                    p->left=leftRotation(p->left);
-                    p=rightRotation(p);
-                    flag=1;
-                }
-                if(flag==1){
-                    struct Node *parent = peep();
-                    if(parent==NULL){
-                        return;
-                    }
-                    if(parent->data<p->data){
-                        parent->right=p;
-                    }
-                    else{
-                        parent->left=p;
-                    }
-                }
-            }
-            printf("\nData Deleted Successfully");
-            return;
-        }
-        else if(q->data>data){
-            PUSH(q);
-            parent=q;
-            q=q->left;
-        }
-        else{
-            PUSH(q);
-            parent=q;
-            q=q->right;
+
+        /* Two children */
+        else {
+
+            struct Node *temp =
+                minValueNode(root->right);
+
+            root->data = temp->data;
+
+            root->right =
+                deleteNode(root->right, temp->data);
         }
     }
-    printf("\nData Not found");
-    top=-1; // empty stack;
-    return;
+
+    if (root == NULL)
+        return root;
+
+    /* Update height */
+    root->height = 1 + max(height(root->left),
+                            height(root->right));
+
+    int bf = balanceFactor(root);
+
+    /* LL */
+    if (bf > 1 &&
+        balanceFactor(root->left) >= 0)
+        return rightRotate(root);
+
+    /* LR */
+    if (bf > 1 &&
+        balanceFactor(root->left) < 0) {
+
+        root->left = leftRotate(root->left);
+
+        return rightRotate(root);
+    }
+
+    /* RR */
+    if (bf < -1 &&
+        balanceFactor(root->right) <= 0)
+        return leftRotate(root);
+
+    /* RL */
+    if (bf < -1 &&
+        balanceFactor(root->right) > 0) {
+
+        root->right = rightRotate(root->right);
+
+        return leftRotate(root);
+    }
+
+    return root;
 }
-void inorder(struct Node *q){
-    if(q!=NULL){
-        inorder(q->left);
-        printf(" %d",q->data);
-        inorder(q->right);
+
+/* Inorder */
+void inorder(struct Node *root) {
+
+    if (root != NULL) {
+
+        inorder(root->left);
+
+        printf("%d ", root->data);
+
+        inorder(root->right);
     }
 }
-/* Print BST like tree (sideways) */
-void printTree(struct Node* root, int space) {
+
+/* Print Tree */
+void printTree(struct Node *root, int space) {
+
     if (root == NULL)
         return;
 
@@ -208,144 +244,77 @@ void printTree(struct Node* root, int space) {
     printTree(root->right, space);
 
     printf("\n");
+
     for (int i = SPACE; i < space; i++)
         printf(" ");
+
     printf("%d\n", root->data);
 
     printTree(root->left, space);
 }
-int main(){
+
+/* Main */
+int main() {
+
     int ch, data;
-    while(1){
-        printf("\n1: Insert \n2: delete \n3: Inorder \n4: Print Tree\n5: Exit");
-        printf("\n Enter Your choice");
-        scanf("%d",&ch);
-        switch(ch){
+
+    while (1) {
+
+        printf("\n1.Insert");
+        printf("\n2.Delete");
+        printf("\n3.Inorder");
+        printf("\n4.Print Tree");
+        printf("\n5.Exit");
+
+        printf("\nEnter choice: ");
+        scanf("%d", &ch);
+
+        switch (ch) {
+
             case 1:
-                printf("Enter The data to be Inserted");
+
+                printf("Enter data: ");
                 scanf("%d", &data);
-                root = insert(root,data);
+
+                root = insert(root, data);
+
                 break;
+
             case 2:
-                printf("Enter The data to be deleted");
+
+                printf("Enter data: ");
                 scanf("%d", &data);
-                delete(root,data);
+
+                root = deleteNode(root, data);
+
                 break;
+
             case 3:
+
+                printf("Inorder: ");
                 inorder(root);
+
+                printf("\n");
+
                 break;
+
             case 4:
+
                 printTree(root, 0);
+
+                printf("\n");
+
                 break;
+
             case 5:
-                exit(1);
+
+                exit(0);
+
             default:
-                printf("Unrecognized command...");
+
+                printf("Invalid Choice");
         }
     }
-    return 1;
+
+    return 0;
 }
-
-
-
-// #include<stdio.h>
-// #include <stdlib.h>
-
-
-// struct node{
-//     struct node *left;
-//     struct node *right;
-//     int data;
-//     int h;
-// };
-
-// struct node *root = NULL;
-
-// int maxx(struct node*a ,struct node* b){
-//     int x = a!=NULL ? a->h:0;
-//     int y = b!=NULL ? b->h:0;
-//     return x>y?x:y;
-// }
-
-// int balancefactor(struct node*a ,struct node* b){
-//     int x = a!=NULL ? a->h:0; 
-//     int y = b!=NULL ? b->h:0 ;
-//     return x-y;
-// }
-
-// struct node* leftRotation(struct node* q){
-//     struct node * t = q -> right;
-//     struct node * s = t -> left;
-//     t -> left = q;
-//     q -> right = s;
-//     q->h=1+maxx(q->left,q->right);
-//     t->h=1+maxx(t->left,t->right);
-//     return t;
-// }
-// struct node* rightRotation(struct node* q){
-//     struct node * t = q -> left;
-//     struct node * s = t -> right;
-//     t -> right = q;
-//     q -> left = s;
-//     q->h=1+maxx(q->left,q->right);
-//     t->h=1+maxx(t->left,t->right);
-//     return t;
-// }
-
-// struct node* insert(struct node* N,int data){
-
-//     if(N==NULL){
-//     struct node* p = (struct node *)(malloc(sizeof(struct node)));
-//     p->data = data;
-//     p->left = p->right = NULL;
-//     p->h = 1;   
-//     return p;
-//     }
-//     else {
-//         if(data>N->data){
-//         N->right = insert(N->right,data);
-//         }
-//         else{
-//             N->left = insert(N->left,data);
-//         }
-//     }
-//     N->h = 1+maxx(N->left,N->right);
-
-//     // balance factor 
-//     int bf = balancefactor(N->left,N->right);  
-//     //avl rule hold or not 
-//     if(bf<-1 && data < N->right->data){     //lr rotation
-//         N -> right = rightRotation(N -> right);
-//         N = leftRotation(N);
-//     }
-//     if(bf<-1 && data > N->right->data){       //ll rotatin
-//         N = leftRotation(N);
-        
-//     }
-//     if(bf>1 && data < N->left->data){       //rr rotatin
-//         N = rightRotation(N);
-
-//     }
-//     if(bf>1 && data > N->left->data){       //rl rotatin
-//         N -> left = leftRotation(N -> left);
-//         N = rightRotation(N);
-//     }
-//     return N;
-// }
-
-// void inorder(struct node* root){
-//     if(root != NULL){
-//         inorder(root -> left);
-//         printf("%d ",root-> data);
-//         inorder(root -> right);
-//     }
-// }
-// int main(){
-//     root = insert(root,10);
-//     root = insert(root,20);
-//     root = insert(root,30);
-//     root = insert(root,15);
-//     root = insert(root,40);
-//     inorder(root);
-//     return 0;
-// }
